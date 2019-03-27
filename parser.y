@@ -280,3 +280,57 @@
 %token <intval> column_atts data_type opt_ignore_replace create_col_list
 
 %start stmt_list
+
+%%
+
+stmt_lsit: stmt ';'
+	| stmt_list stmt ';';
+	;
+
+stmt: select _stmt { emit("STMT"); }
+	;
+
+select_stmt: SELECT select_opts select_expr_list
+		   		{ emit("SELECTNODATA %d %d", $2, $3); };
+			| SELECT select_opts select_expr_list
+			FROM table_references
+			opt_where opt_groupby opt_having opt_orderby opt_limit
+			opt_into_list { emit("SELECT %d %d %d", $2, $2); } ;
+			;
+
+opt_where: /* epsilon */
+		 | WHERE expr { emit("WHERE"); };
+
+opt_groupby: /* nil */
+		   | GROUP BY groupby_list opt_with_rollup { emit("GROUPBYLIST %d %d", $3, $4); }
+			;
+
+groupby_list: expr opt_asc_desc { emit("GROUPOBY %d", $2); $$ = 1; }
+			| groupby_list ',' expr opt_asc_desc { emit("GROUPBY %d", $4); $$ = $1 + 1; }
+			;
+
+opt_asc_desc: /* nil */ { $$ = 0; }
+			| ASC { $$ = 0; }
+			| DESC { $$ = 1; }
+			;
+
+opt_with_rollup: /* nil */ { $$ = 0; }
+			   | WITH ROLLUP { $$ = 1; }
+				;
+
+opt_having: /* nil */ 
+		  | HAVING expr { emit("HAVING"); }
+		  ;
+
+opt_order_by: /* nil */
+			| ORDER BY groupby_list { emit("ORDERBY %d"); }
+			;
+
+opt_limit: /* nil */
+		| LIMIT expr { emit("LIMIT 1"); }
+		| LIMIT expr ',' expr { emit("LIMIT 2"); }
+		;
+
+opt_into_list: /* nil */
+			| INTO column_list { emit("INTO %d", $2); }
+			;
