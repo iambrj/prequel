@@ -334,3 +334,49 @@ opt_limit: /* nil */
 opt_into_list: /* nil */
 			| INTO column_list { emit("INTO %d", $2); }
 			;
+
+column_list: NAME { emit("COLUMN %s", $1); free($1); $$ = 1; }
+		  	| column_list ',' NAME { emit("COLUMN %s", $3); free($3); $$ = $1 + 1; }
+			;
+
+select_opts:									{ $$ = 0; }
+		   	| select_opts ALL					{ if($$ & 01) yyerror("duplicate ALL option"); $$ = $1 | 01; }
+			| select_opts DISTINCT				{ if($$ & 02) yyerror("duplicate DISTINCT option"); $$ = $1 | 02; }
+			| select_opts DISTINCTROW			{ if($$ & 04) yyerror("duplicate DISTINCT_ROW option"); $$ = $1 | 04; }
+			| select_opts HIGH_PRIORITY			{ if($$ & 010) yyerror("duplicate HIGH_PRIORITY option"); $$ = $1 | 04; }
+			| select_opts STRAIGHT_JOIN			{ if($$ & 04) yyerror("duplicate STRAIGHT_JOIN option"); $$ = $1 | 04; }
+			| select_opts SQL_SMALL_RESULT		{ if($$ & 04) yyerror("duplicate SQL_SMALL_RESULT option"); $$ = $1 | 04; }
+			| select_opts SQL_BIG_RESULT		{ if($$ & 04) yyerror("duplicate SQL_BIG_RESULT option"); $$ = $1 | 04; }
+			| select_opts SQL_CALC_FOUND_ROWS	{ if($$ & 04) yyerror("duplicate SQL_CALC_FOUND_ROWS option"); $$ = $1 | 04; }
+			;
+
+select_expr_list: select_expr { $$ = 1; }
+				| select_expr_list ',' select_expr { $$ = $1 + 1; }
+				| '*' { emit("SELECTALL"); $$ = 1; }
+				;
+
+select_expr: expr opt_as_alias ;
+
+table_references: table_reference { $$ = 1; }
+				| table_references ',' table_reference { $$ = $1 + 1; }
+				;
+
+table_reference: table_factor
+			   | join_table
+				;
+
+table_factor:
+				NAME opt_as_alias index_hint { emit("TABLE %s", $1); free($1); }
+			|	NAME '.' NAME opt_as_alias index_hint { emit("TABLE %s.%s", $1, $3); free($1); free($3); }
+			|	table_subquery opt_as NAME { emit("SUBQUERYAS %s", $3); free($3); }
+			|	'(' table_references ')' { emit("TABLEREFERENCES %d", $2); }
+			;
+
+opt_as: 	AS
+	  	|	/* nil */
+		;
+
+opt_as_alias:	AS NAME { emit("ALIAS %s", $2); free($2); }
+			|	NAME	{ emit("ALIAS %s", $1); free($1); }
+			| /* nil */
+			;
