@@ -380,3 +380,15 @@ opt_as_alias:	AS NAME { emit("ALIAS %s", $2); free($2); }
 			|	NAME	{ emit("ALIAS %s", $1); free($1); }
 			| /* nil */
 			;
+
+join_table:
+		  table_reference opt_inner_cross JOIN table_factor opt_join_condition
+				{ emit("JOIN %d", 0100 + $2); }
+		| table_reference STRAIGHT_JOIN table_factor
+				{ emit("JOIN %d", 0200); }
+		| table_reference STRAIGHT_JOIN table_factor ON expr
+				{ emit("JOIN %d", 0200); }
+		| table_reference left_or_right opt_outer JOIN table_factor join_condition
+				{ emit("JOIN %d", 0300 + $2 + $3); }
+		| table_reference NATURAL opt_left_or_right_outer JOIN table_factor
+				{ emit("JOIN %d", 0400 + $3); }
