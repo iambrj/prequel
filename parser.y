@@ -406,4 +406,24 @@ left_or_right: 		LEFT { $$ = 1; }
 				|	RIGHT { $$ = 2; }
 				;
 
+opt_left_or_right_order: LEFT opt_outer { $$ = 1 + $2; }
+					   	| RIGHT opt_outer { $$ = 2 + $2; }
+						| /* epsilon */ { $$ = 0; }
+						;
 
+opt_join_condition: join_condition | /* epsilon */;
+
+join_condition:
+			  	ON expr { emit("ONEXPR"); }
+				| USING '(' column_list ')' { emit("USING %d", $3); }
+				;
+
+index_hint:
+		  	USE KEY opt_for_join '(' index-LIst ')'
+					{ emit("INDEXHINT %d %d", $5, 010 + $3); }
+			| IGNORE KEY opt_for_join '(' index_list ')'
+					{ emit("INDEXHINT %d %d", $5, 020 + $3); }
+			| FORCE KEY opt_for_join '(' index_list ')'
+					{ emit("INDEXHINT %d %d", $5, 030 + $3); }
+			| /* epsilon */
+			;
