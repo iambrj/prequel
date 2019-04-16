@@ -392,3 +392,18 @@ join_table:
 				{ emit("JOIN %d", 0300 + $2 + $3); }
 		| table_reference NATURAL opt_left_or_right_outer JOIN table_factor
 				{ emit("JOIN %d", 0400 + $3); }
+
+opt_inner_cross: /* epsilon */ { $$ =  0; }
+			   	|	INNER { $$ = 1; }
+				|	CROSS { $$ = 2; }
+				;
+
+opt_outer: /* epsilon */ { $$ = 0; }
+		 	|	OUTER { $$ = 4; }
+			;
+
+left_or_right: 		LEFT { $$ = 1; }
+				|	RIGHT { $$ = 2; }
+				;
+
+
